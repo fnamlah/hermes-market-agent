@@ -50,7 +50,7 @@
     display: flex;
     align-items: center;
     padding: 0 20px;
-    gap: 16px;
+    gap: 12px;
     flex-shrink: 0;
   }
 
@@ -131,7 +131,6 @@
     color: var(--text-dim);
     padding: 8px 16px 4px;
   }
-  .nav-group-label + .nav-group-label { margin-top: 0; }
 
   .nav-item {
     display: flex;
@@ -149,6 +148,8 @@
   .nav-item:hover  { color: var(--text); background: var(--surface2); }
   .nav-item.active { color: var(--text); border-left-color: var(--accent); background: var(--surface2); }
   .nav-item.locked { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .nav-item.danger { color: var(--red); }
+  .nav-item.danger:hover { color: var(--red); background: rgba(248,81,73,0.08); border-left-color: var(--red); }
 
   .nav-icon { font-size: 15px; width: 18px; text-align: center; }
 
@@ -165,6 +166,12 @@
     display: none;
   }
   .nav-badge.visible { display: inline-block; animation: pulse 1.5s infinite; }
+
+  .nav-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 16px;
+  }
 
   /* ── Main content ─────────────────────────────────── */
   #main {
@@ -231,7 +238,7 @@
   .btn.success:hover { background: var(--green); color: #0d0f14; }
   .btn.sm { padding: 4px 10px; font-size: 11px; }
 
-  /* ── Form inputs ──────────────────────────────────── */
+  /* ── Form ─────────────────────────────────────────── */
   .field-label {
     display: block;
     font-family: var(--font-mono);
@@ -242,7 +249,7 @@
     margin-bottom: 5px;
   }
 
-  input[type=text], input[type=password] {
+  input[type=text], input[type=password], select {
     background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
@@ -254,8 +261,19 @@
     outline: none;
     transition: border-color 0.15s;
   }
-  input[type=text]:focus, input[type=password]:focus { border-color: var(--accent); }
-  input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+  input[type=text]:focus, input[type=password]:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--text-dim); opacity: 0.5; }
+  input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7688' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  select option { background: var(--surface2); }
 
   /* ── Cards ────────────────────────────────────────── */
   .card {
@@ -275,6 +293,15 @@
     margin-bottom: 10px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label .req-note {
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .card-title {
@@ -290,6 +317,30 @@
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
+
+  /* ── Channel / tool toggles ───────────────────────── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .toggle-icon { font-size: 16px; }
+
+  .toggle-body {
+    padding: 14px 0 6px 26px;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-body:last-child { border-bottom: none; }
 
   /* ── Stat grid ────────────────────────────────────── */
   .stat-grid {
@@ -426,7 +477,7 @@
   #toast.ok  { border-color: var(--green); color: var(--green); }
   #toast.err { border-color: var(--red);   color: var(--red);   }
 
-  /* ── Scrollbars ───────────────────────────────────── */
+  /* ── Misc ─────────────────────────────────────────── */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -439,16 +490,9 @@
     padding: 32px 0;
     text-align: center;
   }
-
-  .hint {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-top: 6px;
-  }
-  code {
-    font-family: var(--font-mono);
-    color: var(--accent);
-  }
+  .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+  code { font-family: var(--font-mono); color: var(--accent); }
+  .field-gap { margin-top: 12px; }
 </style>
 </head>
 <body x-data="app()" x-init="init()" x-cloak>
@@ -492,17 +536,18 @@
 
     <div class="nav-group-label" style="margin-top:8px">Manage</div>
     <div class="nav-item"
-         :class="{active: page==='config', locked: !isSetupDone}"
-         @click="isSetupDone && (page='config')">
-      <span class="nav-icon">⚙</span>
-      <span>Config</span>
-    </div>
-    <div class="nav-item"
          :class="{active: page==='users', locked: !isSetupDone}"
          @click="isSetupDone && (page='users')">
       <span class="nav-icon">◈</span>
       <span>Users</span>
       <span class="nav-badge" :class="{visible: pendingCount>0}" x-text="pendingCount"></span>
+    </div>
+
+    <div class="nav-divider" style="margin-top:auto;"></div>
+
+    <div class="nav-item danger" @click="resetConfig()">
+      <span class="nav-icon">⊘</span>
+      <span>Reset Config</span>
     </div>
 
   </nav>
@@ -518,40 +563,172 @@
       </div>
       <div class="panel-body">
 
-        <div class="section-label">Model</div>
-        <div class="card">
-          <label class="field-label">LLM Model</label>
-          <input type="text" :value="vars.LLM_MODEL||''" @input="vars.LLM_MODEL=$event.target.value"
-                 placeholder="openai/gpt-4o-mini  or  anthropic/claude-opus-4">
-          <p class="hint">OpenRouter format: <code>provider/model</code></p>
-        </div>
-
+        <!-- LLM Provider -->
         <div class="section-label">
-          LLM Provider Keys
-          <span style="color:var(--accent);font-size:10px;letter-spacing:0;"> — at least one required</span>
+          LLM Provider
+          <span class="req-note">* required</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-          <template x-for="p in providers" :key="p.key">
-            <div class="card" style="margin-bottom:0;">
-              <label class="field-label" x-text="p.label"></label>
-              <input type="password" :value="vars[p.key]||''" @input="vars[p.key]=$event.target.value" placeholder="sk-...">
-            </div>
-          </template>
+        <div class="card">
+          <div>
+            <label class="field-label">Provider</label>
+            <select x-model="selectedProvider" @change="onProviderChange()">
+              <option value="">— Select provider —</option>
+              <template x-for="(p, name) in providerMap" :key="name">
+                <option :value="name" x-text="name"></option>
+              </template>
+            </select>
+          </div>
+
+          <div class="field-gap" x-show="selectedProvider">
+            <label class="field-label">API Key</label>
+            <input type="password"
+                   :value="selectedProvider ? (vars[providerMap[selectedProvider]?.key]||'') : ''"
+                   @input="if(selectedProvider) vars[providerMap[selectedProvider].key]=$event.target.value"
+                   :placeholder="selectedProvider ? (providerMap[selectedProvider]?.placeholder||'Paste your API key') : ''">
+          </div>
+
+          <div class="field-gap" x-show="selectedProvider">
+            <label class="field-label">LLM Model</label>
+            <input type="text" :value="vars.LLM_MODEL||''" @input="vars.LLM_MODEL=$event.target.value"
+                   placeholder="e.g. openai/gpt-4o-mini  or  deepseek/deepseek-chat">
+            <p class="hint">OpenRouter format: <code>provider/model-name</code></p>
+          </div>
         </div>
 
-        <div class="section-label">Messaging Channel</div>
-        <div class="card">
-          <div class="card-title">Telegram</div>
-          <div class="field-grid-2">
-            <div>
-              <label class="field-label">Bot Token</label>
-              <input type="password" :value="vars.TELEGRAM_BOT_TOKEN||''" @input="vars.TELEGRAM_BOT_TOKEN=$event.target.value" placeholder="From @BotFather">
-            </div>
-            <div>
-              <label class="field-label">Allowed User IDs</label>
-              <input type="text" :value="vars.TELEGRAM_ALLOWED_USERS||''" @input="vars.TELEGRAM_ALLOWED_USERS=$event.target.value" placeholder="123456,789012">
+        <!-- Messaging Channels -->
+        <div class="section-label">
+          Messaging Channels
+          <span class="req-note">— at least one required</span>
+        </div>
+        <div class="card" style="padding: 0 16px;">
+
+          <!-- Telegram -->
+          <div class="toggle-row" @click="channelsEnabled.telegram=!channelsEnabled.telegram; if(!channelsEnabled.telegram) clearChannel('telegram')">
+            <input type="checkbox" :checked="channelsEnabled.telegram" @click.stop @change="channelsEnabled.telegram=$event.target.checked; if(!channelsEnabled.telegram) clearChannel('telegram')">
+            <span class="toggle-icon">✈️</span>
+            <span class="toggle-label">Telegram</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.telegram">
+            <div class="field-grid-2">
+              <div><label class="field-label">Bot Token</label><input type="password" :value="vars.TELEGRAM_BOT_TOKEN||''" @input="vars.TELEGRAM_BOT_TOKEN=$event.target.value" placeholder="From @BotFather"></div>
+              <div><label class="field-label">Allowed User IDs</label><input type="text" :value="vars.TELEGRAM_ALLOWED_USERS||''" @input="vars.TELEGRAM_ALLOWED_USERS=$event.target.value" placeholder="123456,789012"></div>
             </div>
           </div>
+
+          <!-- Discord -->
+          <div class="toggle-row" @click="channelsEnabled.discord=!channelsEnabled.discord; if(!channelsEnabled.discord) clearChannel('discord')">
+            <input type="checkbox" :checked="channelsEnabled.discord" @click.stop @change="channelsEnabled.discord=$event.target.checked; if(!channelsEnabled.discord) clearChannel('discord')">
+            <span class="toggle-icon">🎮</span>
+            <span class="toggle-label">Discord</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.discord">
+            <div class="field-grid-2">
+              <div><label class="field-label">Bot Token</label><input type="password" :value="vars.DISCORD_BOT_TOKEN||''" @input="vars.DISCORD_BOT_TOKEN=$event.target.value"></div>
+              <div><label class="field-label">Allowed User IDs</label><input type="text" :value="vars.DISCORD_ALLOWED_USERS||''" @input="vars.DISCORD_ALLOWED_USERS=$event.target.value"></div>
+            </div>
+          </div>
+
+          <!-- Slack -->
+          <div class="toggle-row" @click="channelsEnabled.slack=!channelsEnabled.slack; if(!channelsEnabled.slack) clearChannel('slack')">
+            <input type="checkbox" :checked="channelsEnabled.slack" @click.stop @change="channelsEnabled.slack=$event.target.checked; if(!channelsEnabled.slack) clearChannel('slack')">
+            <span class="toggle-icon">💼</span>
+            <span class="toggle-label">Slack</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.slack">
+            <div class="field-grid-2">
+              <div><label class="field-label">Bot Token (xoxb-…)</label><input type="password" :value="vars.SLACK_BOT_TOKEN||''" @input="vars.SLACK_BOT_TOKEN=$event.target.value" placeholder="xoxb-..."></div>
+              <div><label class="field-label">App Token (xapp-…)</label><input type="password" :value="vars.SLACK_APP_TOKEN||''" @input="vars.SLACK_APP_TOKEN=$event.target.value" placeholder="xapp-..."></div>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="toggle-row" @click="channelsEnabled.email=!channelsEnabled.email; if(!channelsEnabled.email) clearChannel('email')">
+            <input type="checkbox" :checked="channelsEnabled.email" @click.stop @change="channelsEnabled.email=$event.target.checked; if(!channelsEnabled.email) clearChannel('email')">
+            <span class="toggle-icon">📧</span>
+            <span class="toggle-label">Email</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.email">
+            <div class="field-grid-2">
+              <div><label class="field-label">Address</label><input type="text" :value="vars.EMAIL_ADDRESS||''" @input="vars.EMAIL_ADDRESS=$event.target.value" placeholder="hermes@gmail.com"></div>
+              <div><label class="field-label">Password</label><input type="password" :value="vars.EMAIL_PASSWORD||''" @input="vars.EMAIL_PASSWORD=$event.target.value"></div>
+              <div><label class="field-label">IMAP Host</label><input type="text" :value="vars.EMAIL_IMAP_HOST||''" @input="vars.EMAIL_IMAP_HOST=$event.target.value" placeholder="imap.gmail.com"></div>
+              <div><label class="field-label">SMTP Host</label><input type="text" :value="vars.EMAIL_SMTP_HOST||''" @input="vars.EMAIL_SMTP_HOST=$event.target.value" placeholder="smtp.gmail.com"></div>
+            </div>
+          </div>
+
+          <!-- Mattermost -->
+          <div class="toggle-row" @click="channelsEnabled.mattermost=!channelsEnabled.mattermost; if(!channelsEnabled.mattermost) clearChannel('mattermost')">
+            <input type="checkbox" :checked="channelsEnabled.mattermost" @click.stop @change="channelsEnabled.mattermost=$event.target.checked; if(!channelsEnabled.mattermost) clearChannel('mattermost')">
+            <span class="toggle-icon">🔷</span>
+            <span class="toggle-label">Mattermost</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.mattermost">
+            <div class="field-grid-2">
+              <div><label class="field-label">Server URL</label><input type="text" :value="vars.MATTERMOST_URL||''" @input="vars.MATTERMOST_URL=$event.target.value" placeholder="https://mm.example.com"></div>
+              <div><label class="field-label">Bot Token</label><input type="password" :value="vars.MATTERMOST_TOKEN||''" @input="vars.MATTERMOST_TOKEN=$event.target.value"></div>
+            </div>
+          </div>
+
+          <!-- Matrix -->
+          <div class="toggle-row" @click="channelsEnabled.matrix=!channelsEnabled.matrix; if(!channelsEnabled.matrix) clearChannel('matrix')">
+            <input type="checkbox" :checked="channelsEnabled.matrix" @click.stop @change="channelsEnabled.matrix=$event.target.checked; if(!channelsEnabled.matrix) clearChannel('matrix')">
+            <span class="toggle-icon">🔢</span>
+            <span class="toggle-label">Matrix</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.matrix">
+            <div class="field-grid-2">
+              <div><label class="field-label">Homeserver URL</label><input type="text" :value="vars.MATRIX_HOMESERVER||''" @input="vars.MATRIX_HOMESERVER=$event.target.value" placeholder="https://matrix.example.org"></div>
+              <div><label class="field-label">Access Token</label><input type="password" :value="vars.MATRIX_ACCESS_TOKEN||''" @input="vars.MATRIX_ACCESS_TOKEN=$event.target.value"></div>
+              <div><label class="field-label">User ID</label><input type="text" :value="vars.MATRIX_USER_ID||''" @input="vars.MATRIX_USER_ID=$event.target.value" placeholder="@hermes:example.org"></div>
+            </div>
+          </div>
+
+          <!-- WhatsApp -->
+          <div class="toggle-row" style="border-bottom:none;" @click="channelsEnabled.whatsapp=!channelsEnabled.whatsapp; vars.WHATSAPP_ENABLED=channelsEnabled.whatsapp?'true':'false'">
+            <input type="checkbox" :checked="channelsEnabled.whatsapp" @click.stop @change="channelsEnabled.whatsapp=$event.target.checked; vars.WHATSAPP_ENABLED=$event.target.checked?'true':'false'">
+            <span class="toggle-icon">💬</span>
+            <span class="toggle-label">WhatsApp</span>
+            <span style="font-size:11px;color:var(--text-dim);margin-left:8px;">pairing via gateway logs on first run</span>
+          </div>
+
+        </div>
+
+        <!-- Gateway options -->
+        <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <input type="checkbox" :checked="vars.GATEWAY_ALLOW_ALL_USERS==='true'" @change="vars.GATEWAY_ALLOW_ALL_USERS=$event.target.checked?'true':'false'">
+          <div>
+            <p style="font-size:13px;font-weight:500;">Allow all users</p>
+            <p class="hint" style="margin-top:2px;">Skip per-platform allowlists — use with caution</p>
+          </div>
+        </div>
+
+        <!-- Tool API Keys -->
+        <div class="section-label">
+          Tool API Keys
+          <span class="req-note">— optional</span>
+        </div>
+        <div class="card" style="padding: 0 16px;">
+          <template x-for="(t, i) in tools" :key="t.key">
+            <div>
+              <div class="toggle-row" :style="i===tools.length-1 && !toolsEnabled[t.key] ? 'border-bottom:none' : ''"
+                   @click="toolsEnabled[t.key]=!toolsEnabled[t.key]; if(!toolsEnabled[t.key]) clearTool(t)">
+                <input type="checkbox" :checked="toolsEnabled[t.key]" @click.stop
+                       @change="toolsEnabled[t.key]=$event.target.checked; if(!toolsEnabled[t.key]) clearTool(t)">
+                <span class="toggle-label" x-text="t.label"></span>
+              </div>
+              <div class="toggle-body" x-show="toolsEnabled[t.key]"
+                   :style="i===tools.length-1 ? 'border-bottom:none' : ''">
+                <div>
+                  <label class="field-label">API Key</label>
+                  <input :type="t.secret?'password':'text'" :value="vars[t.key]||''" @input="vars[t.key]=$event.target.value">
+                </div>
+                <div x-show="t.key==='BROWSERBASE_API_KEY'" class="field-gap">
+                  <label class="field-label">Project ID</label>
+                  <input type="text" :value="vars.BROWSERBASE_PROJECT_ID||''" @input="vars.BROWSERBASE_PROJECT_ID=$event.target.value">
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
 
       </div>
@@ -643,134 +820,6 @@
       </div>
     </div>
 
-    <!-- ── Config panel ────────────────────────────── -->
-    <div class="panel" :class="{active: page==='config'}">
-      <div class="panel-header">
-        <div class="panel-title">Config</div>
-        <div class="panel-subtitle">All configuration</div>
-      </div>
-      <div class="panel-body">
-
-        <div class="section-label">Model</div>
-        <div class="card">
-          <label class="field-label">LLM Model</label>
-          <input type="text" :value="vars.LLM_MODEL||''" @input="vars.LLM_MODEL=$event.target.value"
-                 placeholder="openai/gpt-4o-mini">
-          <p class="hint">OpenRouter format: <code>provider/model</code></p>
-        </div>
-
-        <div class="section-label">LLM Providers</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-          <template x-for="p in providers" :key="p.key">
-            <div class="card" style="margin-bottom:0;">
-              <label class="field-label" x-text="p.label"></label>
-              <input type="password" :value="vars[p.key]||''" @input="vars[p.key]=$event.target.value" placeholder="sk-...">
-            </div>
-          </template>
-        </div>
-
-        <div class="section-label">Messaging Channels</div>
-
-        <div class="card">
-          <div class="card-title">Telegram</div>
-          <div class="field-grid-2">
-            <div><label class="field-label">Bot Token</label><input type="password" :value="vars.TELEGRAM_BOT_TOKEN||''" @input="vars.TELEGRAM_BOT_TOKEN=$event.target.value" placeholder="From @BotFather"></div>
-            <div><label class="field-label">Allowed User IDs</label><input type="text" :value="vars.TELEGRAM_ALLOWED_USERS||''" @input="vars.TELEGRAM_ALLOWED_USERS=$event.target.value" placeholder="123,456"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Discord</div>
-          <div class="field-grid-2">
-            <div><label class="field-label">Bot Token</label><input type="password" :value="vars.DISCORD_BOT_TOKEN||''" @input="vars.DISCORD_BOT_TOKEN=$event.target.value"></div>
-            <div><label class="field-label">Allowed User IDs</label><input type="text" :value="vars.DISCORD_ALLOWED_USERS||''" @input="vars.DISCORD_ALLOWED_USERS=$event.target.value"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Slack</div>
-          <div class="field-grid-2">
-            <div><label class="field-label">Bot Token (xoxb-…)</label><input type="password" :value="vars.SLACK_BOT_TOKEN||''" @input="vars.SLACK_BOT_TOKEN=$event.target.value"></div>
-            <div><label class="field-label">App Token (xapp-…)</label><input type="password" :value="vars.SLACK_APP_TOKEN||''" @input="vars.SLACK_APP_TOKEN=$event.target.value"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Email</div>
-          <div class="field-grid-2">
-            <div><label class="field-label">Address</label><input type="text" :value="vars.EMAIL_ADDRESS||''" @input="vars.EMAIL_ADDRESS=$event.target.value" placeholder="hermes@gmail.com"></div>
-            <div><label class="field-label">Password</label><input type="password" :value="vars.EMAIL_PASSWORD||''" @input="vars.EMAIL_PASSWORD=$event.target.value"></div>
-            <div><label class="field-label">IMAP Host</label><input type="text" :value="vars.EMAIL_IMAP_HOST||''" @input="vars.EMAIL_IMAP_HOST=$event.target.value" placeholder="imap.gmail.com"></div>
-            <div><label class="field-label">SMTP Host</label><input type="text" :value="vars.EMAIL_SMTP_HOST||''" @input="vars.EMAIL_SMTP_HOST=$event.target.value" placeholder="smtp.gmail.com"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Mattermost</div>
-          <div class="field-grid-2">
-            <div><label class="field-label">Server URL</label><input type="text" :value="vars.MATTERMOST_URL||''" @input="vars.MATTERMOST_URL=$event.target.value" placeholder="https://mm.example.com"></div>
-            <div><label class="field-label">Bot Token</label><input type="password" :value="vars.MATTERMOST_TOKEN||''" @input="vars.MATTERMOST_TOKEN=$event.target.value"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Matrix</div>
-          <div class="field-grid-2">
-            <div><label class="field-label">Homeserver URL</label><input type="text" :value="vars.MATRIX_HOMESERVER||''" @input="vars.MATRIX_HOMESERVER=$event.target.value" placeholder="https://matrix.example.org"></div>
-            <div><label class="field-label">Access Token</label><input type="password" :value="vars.MATRIX_ACCESS_TOKEN||''" @input="vars.MATRIX_ACCESS_TOKEN=$event.target.value"></div>
-            <div><label class="field-label">User ID</label><input type="text" :value="vars.MATRIX_USER_ID||''" @input="vars.MATRIX_USER_ID=$event.target.value" placeholder="@hermes:example.org"></div>
-          </div>
-        </div>
-
-        <div class="card" style="display:flex;align-items:center;gap:12px;">
-          <input type="checkbox" :checked="vars.WHATSAPP_ENABLED==='true'" @change="vars.WHATSAPP_ENABLED=$event.target.checked?'true':'false'">
-          <div>
-            <p style="font-size:13px;font-weight:500;">WhatsApp</p>
-            <p class="hint" style="margin-top:2px;">Requires pairing via gateway logs on first run</p>
-          </div>
-        </div>
-
-        <div class="card" style="display:flex;align-items:center;gap:12px;">
-          <input type="checkbox" :checked="vars.GATEWAY_ALLOW_ALL_USERS==='true'" @change="vars.GATEWAY_ALLOW_ALL_USERS=$event.target.checked?'true':'false'">
-          <div>
-            <p style="font-size:13px;font-weight:500;">Allow all users</p>
-            <p class="hint" style="margin-top:2px;">Skip per-platform allowlists — use with caution</p>
-          </div>
-        </div>
-
-        <div class="section-label" style="margin-top:8px;">Tool API Keys</div>
-        <div class="card">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <template x-for="t in tools" :key="t.key">
-              <div>
-                <label class="field-label" x-text="t.label"></label>
-                <input :type="t.secret?'password':'text'" :value="vars[t.key]||''" @input="vars[t.key]=$event.target.value">
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <div class="section-label">Admin Credentials</div>
-        <div class="card">
-          <p class="hint" style="margin-bottom:12px;">Set <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code> as Railway env vars. Changes take effect on next redeploy.</p>
-          <div class="field-grid-2">
-            <div><label class="field-label">Username</label><input type="text" :value="vars.ADMIN_USERNAME||''" @input="vars.ADMIN_USERNAME=$event.target.value" placeholder="admin"></div>
-            <div><label class="field-label">Password</label><input type="password" :value="vars.ADMIN_PASSWORD||''" @input="vars.ADMIN_PASSWORD=$event.target.value" placeholder="leave blank to auto-generate"></div>
-          </div>
-        </div>
-
-      </div>
-      <div class="save-bar">
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;">
-          <input type="checkbox" x-model="restartOnSave"> Restart gateway after save
-        </label>
-        <button class="btn primary" @click="saveConfig()" :disabled="saving">
-          <span x-show="!saving">Save</span>
-          <span x-show="saving">Saving…</span>
-        </button>
-      </div>
-    </div>
-
     <!-- ── Users panel ─────────────────────────────── -->
     <div class="panel" :class="{active: page==='users'}">
       <div class="panel-header">
@@ -839,6 +888,17 @@
 
 <script>
 function app() {
+  const tools = [
+    { key: 'PARALLEL_API_KEY',       label: 'Parallel (search)',         secret: true  },
+    { key: 'FIRECRAWL_API_KEY',      label: 'Firecrawl (scraping)',       secret: true  },
+    { key: 'TAVILY_API_KEY',         label: 'Tavily (search)',            secret: true  },
+    { key: 'FAL_KEY',                label: 'FAL (image gen)',            secret: true  },
+    { key: 'BROWSERBASE_API_KEY',    label: 'Browserbase',                secret: true  },
+    { key: 'GITHUB_TOKEN',           label: 'GitHub',                     secret: true  },
+    { key: 'VOICE_TOOLS_OPENAI_KEY', label: 'OpenAI Voice (Whisper/TTS)', secret: true  },
+    { key: 'HONCHO_API_KEY',         label: 'Honcho (memory)',            secret: true  },
+  ];
+
   return {
     page: 'setup',
     vars: {},
@@ -850,32 +910,57 @@ function app() {
     saving: false,
     restartOnSave: true,
 
-    providers: [
-      { key: 'OPENROUTER_API_KEY',  label: 'OpenRouter API Key' },
-      { key: 'DEEPSEEK_API_KEY',    label: 'DeepSeek API Key'   },
-      { key: 'DASHSCOPE_API_KEY',   label: 'DashScope API Key'  },
-      { key: 'GLM_API_KEY',         label: 'GLM / Z.AI API Key' },
-      { key: 'KIMI_API_KEY',        label: 'Kimi API Key'       },
-      { key: 'MINIMAX_API_KEY',     label: 'MiniMax API Key'    },
-      { key: 'HF_TOKEN',            label: 'HuggingFace Token'  },
-    ],
-    tools: [
-      { key: 'PARALLEL_API_KEY',       label: 'Parallel (search)',         secret: true  },
-      { key: 'FIRECRAWL_API_KEY',      label: 'Firecrawl (scraping)',       secret: true  },
-      { key: 'TAVILY_API_KEY',         label: 'Tavily (search)',            secret: true  },
-      { key: 'FAL_KEY',                label: 'FAL (image gen)',            secret: true  },
-      { key: 'BROWSERBASE_API_KEY',    label: 'Browserbase API key',        secret: true  },
-      { key: 'BROWSERBASE_PROJECT_ID', label: 'Browserbase project ID',     secret: false },
-      { key: 'GITHUB_TOKEN',           label: 'GitHub token',               secret: true  },
-      { key: 'VOICE_TOOLS_OPENAI_KEY', label: 'OpenAI voice (Whisper/TTS)', secret: true  },
-      { key: 'HONCHO_API_KEY',         label: 'Honcho (memory)',            secret: true  },
-    ],
+    tools,
+
+    providerMap: {
+      'OpenRouter':  { key: 'OPENROUTER_API_KEY',  placeholder: 'sk-or-...' },
+      'DeepSeek':    { key: 'DEEPSEEK_API_KEY',     placeholder: 'sk-...'    },
+      'DashScope':   { key: 'DASHSCOPE_API_KEY',    placeholder: ''          },
+      'GLM / Z.AI':  { key: 'GLM_API_KEY',          placeholder: ''          },
+      'Kimi':        { key: 'KIMI_API_KEY',          placeholder: ''          },
+      'MiniMax':     { key: 'MINIMAX_API_KEY',       placeholder: ''          },
+      'HuggingFace': { key: 'HF_TOKEN',              placeholder: 'hf_...'   },
+    },
+
+    selectedProvider: '',
+
+    channelsEnabled: {
+      telegram: false, discord: false, slack: false,
+      email: false, mattermost: false, matrix: false, whatsapp: false,
+    },
+
+    toolsEnabled: Object.fromEntries(tools.map(t => [t.key, false])),
 
     get pendingCount() { return this.pending.length; },
 
     get isSetupDone() {
-      const keys = ['OPENROUTER_API_KEY','DEEPSEEK_API_KEY','DASHSCOPE_API_KEY','GLM_API_KEY','KIMI_API_KEY','MINIMAX_API_KEY','HF_TOKEN'];
+      const keys = Object.values(this.providerMap).map(p => p.key);
       return !!(this.vars.LLM_MODEL && keys.some(k => this.vars[k]));
+    },
+
+    onProviderChange() {
+      // Clear keys from other providers when switching
+      for (const [name, p] of Object.entries(this.providerMap)) {
+        if (name !== this.selectedProvider) this.vars[p.key] = '';
+      }
+    },
+
+    clearChannel(ch) {
+      const keysMap = {
+        telegram:   ['TELEGRAM_BOT_TOKEN','TELEGRAM_ALLOWED_USERS'],
+        discord:    ['DISCORD_BOT_TOKEN','DISCORD_ALLOWED_USERS'],
+        slack:      ['SLACK_BOT_TOKEN','SLACK_APP_TOKEN'],
+        email:      ['EMAIL_ADDRESS','EMAIL_PASSWORD','EMAIL_IMAP_HOST','EMAIL_SMTP_HOST'],
+        mattermost: ['MATTERMOST_URL','MATTERMOST_TOKEN'],
+        matrix:     ['MATRIX_HOMESERVER','MATRIX_ACCESS_TOKEN','MATRIX_USER_ID'],
+        whatsapp:   ['WHATSAPP_ENABLED'],
+      };
+      for (const k of keysMap[ch] || []) this.vars[k] = '';
+    },
+
+    clearTool(t) {
+      this.vars[t.key] = '';
+      if (t.key === 'BROWSERBASE_API_KEY') this.vars.BROWSERBASE_PROJECT_ID = '';
     },
 
     async init() {
@@ -888,7 +973,28 @@ function app() {
     async loadConfig() {
       try {
         const r = await fetch('/api/config');
-        if (r.ok) { const d = await r.json(); this.vars = d.vars||{}; }
+        if (r.ok) {
+          const d = await r.json();
+          this.vars = d.vars || {};
+          // Detect active provider
+          for (const [name, p] of Object.entries(this.providerMap)) {
+            if (this.vars[p.key]) { this.selectedProvider = name; break; }
+          }
+          // Detect active channels
+          this.channelsEnabled = {
+            telegram:   !!(this.vars.TELEGRAM_BOT_TOKEN),
+            discord:    !!(this.vars.DISCORD_BOT_TOKEN),
+            slack:      !!(this.vars.SLACK_BOT_TOKEN),
+            email:      !!(this.vars.EMAIL_ADDRESS),
+            mattermost: !!(this.vars.MATTERMOST_URL),
+            matrix:     !!(this.vars.MATRIX_HOMESERVER),
+            whatsapp:   this.vars.WHATSAPP_ENABLED === 'true',
+          };
+          // Detect active tools
+          for (const t of this.tools) {
+            this.toolsEnabled[t.key] = !!(this.vars[t.key]);
+          }
+        }
       } catch {}
     },
 
@@ -904,6 +1010,19 @@ function app() {
         else { const e = await r.json().catch(()=>{}); this.notify(e?.error||'Save failed', false); }
       } catch(e) { this.notify('Save failed: '+e.message, false); }
       this.saving = false;
+    },
+
+    async resetConfig() {
+      if (!confirm('Reset all configuration? This will stop the gateway and clear all saved settings.')) return;
+      const r = await fetch('/api/config/reset', { method: 'POST' });
+      if (r.ok) {
+        await this.loadConfig();
+        this.selectedProvider = '';
+        this.page = 'setup';
+        this.notify('Config reset', true);
+      } else {
+        this.notify('Reset failed', false);
+      }
     },
 
     async loadStatus() {

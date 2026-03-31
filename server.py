@@ -374,6 +374,16 @@ async def api_gw_restart(request: Request):
     return JSONResponse({"ok": True})
 
 
+async def api_config_reset(request: Request):
+    if err := guard(request): return err
+    asyncio.create_task(gw.stop())
+    async with cfg_lock:
+        if ENV_FILE.exists():
+            ENV_FILE.unlink()
+        write_config_yaml({})
+    return JSONResponse({"ok": True})
+
+
 # ── Pairing ───────────────────────────────────────────────────────────────────
 def _pjson(path: Path) -> dict:
     try:
@@ -490,6 +500,7 @@ routes = [
     Route("/api/gateway/start",         api_gw_start,        methods=["POST"]),
     Route("/api/gateway/stop",          api_gw_stop,         methods=["POST"]),
     Route("/api/gateway/restart",       api_gw_restart,      methods=["POST"]),
+    Route("/api/config/reset",          api_config_reset,    methods=["POST"]),
     Route("/api/pairing/pending",       api_pairing_pending),
     Route("/api/pairing/approve",       api_pairing_approve, methods=["POST"]),
     Route("/api/pairing/deny",          api_pairing_deny,    methods=["POST"]),
