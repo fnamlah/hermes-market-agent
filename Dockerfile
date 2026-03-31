@@ -18,15 +18,13 @@ RUN apt-get update && apt-get install -y \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
 
-# Install pip via get-pip
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
-
 # Clone hermes-agent
 WORKDIR /opt/hermes
 RUN git clone https://github.com/NousResearch/hermes-agent.git .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -e ".[all]" || pip install --no-cache-dir -e .
+# Install Python dependencies (--break-system-packages needed on Debian bookworm)
+RUN pip install --no-cache-dir --break-system-packages -e ".[all]" || \
+    pip install --no-cache-dir --break-system-packages -e .
 
 # Copy our entrypoint
 COPY entrypoint.sh /entrypoint.sh
