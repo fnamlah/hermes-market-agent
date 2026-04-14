@@ -505,6 +505,151 @@
   .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
   code { font-family: var(--font-mono); color: var(--accent); }
   .field-gap { margin-top: 12px; }
+
+  /* ── Guide steps ─────────────────────────────────── */
+  .guide-section {
+    margin-bottom: 28px;
+  }
+  .guide-section-title {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .guide-section-title .guide-num {
+    background: var(--accent);
+    color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .step-list {
+    list-style: none;
+    padding: 0;
+    counter-reset: step;
+  }
+  .step-list li {
+    position: relative;
+    padding: 10px 0 10px 36px;
+    border-left: 2px solid var(--border);
+    margin-left: 11px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .step-list li:last-child { border-left-color: transparent; }
+  .step-list li::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: -8px;
+    top: 10px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-list li a {
+    color: var(--accent2);
+    text-decoration: none;
+  }
+  .step-list li a:hover { text-decoration: underline; }
+  .step-list .step-note {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ── Template cards ──────────────────────────────── */
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .template-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    transition: border-color 0.15s;
+  }
+  .template-card:hover { border-color: var(--accent); }
+  .template-card-name {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .template-card-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .template-card .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+
+  /* ── Header branding ──────────────────────────────── */
+  .header-branding {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .header-branding img {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: contain;
+  }
+  .header-branding a {
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .header-branding a:hover { color: var(--accent); }
+
+  /* ── Guide callout ───────────────────────────────── */
+  .guide-callout {
+    background: rgba(98,114,255,0.06);
+    border: 1px solid rgba(98,114,255,0.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .guide-callout a {
+    color: #e5534b;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .guide-callout a:hover { text-decoration: underline; }
 </style>
 </head>
 <body x-data="app()" x-init="init()" x-cloak>
@@ -516,6 +661,12 @@
   <div class="logo">hermes<span>/admin</span></div>
   <div class="status-dot" :class="gw.state||'stopped'"></div>
   <div id="status-label" x-text="gw.state||'stopped'"></div>
+  <div class="header-spacer"></div>
+  <div class="header-branding">
+    <span>made with ♥ by</span>
+    <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/heimdall-light.svg" alt="Heimdall">
+    <a href="https://github.com/praveen-ks-2001" target="_blank" rel="noopener">Heimdall</a>
+  </div>
   <div class="header-spacer"></div>
   <a class="header-issue-link" href="https://github.com/praveen-ks-2001/hermes-agent-template/issues" target="_blank" rel="noopener">⚠ Report issue</a>
   <button class="header-btn" @click="restartGateway()">↺ Restart</button>
@@ -556,12 +707,23 @@
       <span class="nav-badge" :class="{visible: pendingCount>0}" x-text="pendingCount"></span>
     </div>
 
+    <div class="nav-group-label" style="margin-top:8px">Resources</div>
+    <div class="nav-item" :class="{active: page==='guide'}" @click="page='guide'">
+      <span class="nav-icon">📖</span>
+      <span>How to Setup</span>
+    </div>
+    <div class="nav-item" :class="{active: page==='templates'}" @click="page='templates'">
+      <span class="nav-icon">🚀</span>
+      <span>Other Templates</span>
+    </div>
+
     <div class="nav-divider" style="margin-top:auto;"></div>
 
     <div class="nav-item danger" @click="resetConfig()">
       <span class="nav-icon">⊘</span>
       <span>Reset Config</span>
     </div>
+
 
   </nav>
 
@@ -575,6 +737,10 @@
         <div class="panel-subtitle">Configure your Hermes Agent</div>
       </div>
       <div class="panel-body">
+
+        <div style="background:rgba(98,114,255,0.06);border:1px solid rgba(98,114,255,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text-dim);">
+          New to Hermes? Head over to the <a href="#" @click.prevent="page='guide'" style="color:var(--accent2);text-decoration:none;font-weight:500;">How to Setup</a> section for a step-by-step guide on getting started.
+        </div>
 
         <!-- LLM Provider -->
         <div class="section-label">
@@ -890,6 +1056,117 @@
           </table>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ── Guide panel ─────────────────────────────── -->
+    <div class="panel" :class="{active: page==='guide'}">
+      <div class="panel-header">
+        <div class="panel-title">How to Setup</div>
+        <div class="panel-subtitle">Get your Hermes Agent running in minutes</div>
+      </div>
+      <div class="panel-body">
+
+        <!-- Part 1: LLM API Key -->
+        <div class="guide-section">
+          <div class="guide-section-title">
+            <span class="guide-num">1</span>
+            Get a Free LLM API Key
+          </div>
+          <ol class="step-list">
+            <li>
+              Go to <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a> and create a free account.
+            </li>
+            <li>
+              Once logged in, go to <a href="https://openrouter.ai/workspaces/default/keys" target="_blank" rel="noopener">openrouter.ai/workspaces/default/keys</a> and click <strong>Create Key</strong>.
+              <span class="step-note">Copy the generated API key — it starts with <code>sk-or-...</code></span>
+            </li>
+            <li>
+              OpenRouter offers many models, including free ones. To get started, you can pick a free model such as:
+              <span class="step-note"><code>nvidia/llama-3.3-nemotron-super-49b-v1:free</code></span>
+              <span class="step-note">Browse all available models at <a href="https://openrouter.ai/models" target="_blank" rel="noopener">openrouter.ai/models</a> — filter by "Free" to see no-cost options.</span>
+            </li>
+            <li>
+              Head over to the <strong>Setup</strong> page (left sidebar), select <strong>OpenRouter</strong> as provider, paste your API key, and enter the model name.
+            </li>
+          </ol>
+        </div>
+
+        <!-- Part 2: Telegram -->
+        <div class="guide-section">
+          <div class="guide-section-title">
+            <span class="guide-num">2</span>
+            Connect a Messaging Platform
+          </div>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
+            Hermes Agent works through messaging platforms. You need to connect at least one. The easiest to set up is <strong style="color:var(--text);">Telegram</strong>.
+          </p>
+          <ol class="step-list">
+            <li>
+              Open Telegram and search for <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a>.
+            </li>
+            <li>
+              Send <code>/newbot</code> and follow the prompts — give your bot a name and username.
+            </li>
+            <li>
+              BotFather will reply with a <strong>Bot Token</strong> — it looks like <code>1234567890:ABCdefGhIjKlMnOpQrStUvWxYz</code>.
+              <span class="step-note">Copy this token.</span>
+            </li>
+            <li>
+              Go to the <strong>Setup</strong> page, enable <strong>Telegram</strong> under Messaging Channels, and paste the Bot Token.
+            </li>
+            <li>
+              For <strong>Allowed User IDs</strong>, if you're just starting out, enter <code>*</code> to allow all users.
+              <span class="step-note">You can restrict access later by specifying individual Telegram user IDs.</span>
+            </li>
+            <li>
+              Click <strong>Save & Start</strong> on the bottom right — your Hermes Agent is now live!
+            </li>
+          </ol>
+        </div>
+
+        <!-- Issue callout -->
+        <div class="guide-callout">
+          Facing an issue or something not working as expected? <a href="https://github.com/praveen-ks-2001/hermes-agent-template/issues" target="_blank" rel="noopener">Create a GitHub issue</a> and we'll help you out.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Other Templates panel ───────────────────── -->
+    <div class="panel" :class="{active: page==='templates'}">
+      <div class="panel-header">
+        <div class="panel-title">Other Templates</div>
+        <div class="panel-subtitle">Deploy more AI agents on Railway</div>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;">
+          Explore other AI agent templates you can deploy on Railway with one click.
+        </p>
+
+        <div class="template-grid">
+
+          <div class="template-card">
+            <div class="template-card-name">OpenClaw</div>
+            <div class="template-card-desc">
+              Self-hosted OpenClaw agent — deploy and manage your own OpenClaw instance on Railway.
+            </div>
+            <a class="btn primary" href="https://railway.com/deploy/self-host-openclaw?referralCode=QXdhdr&utm_medium=integration&utm_source=template&utm_campaign=generic" target="_blank" rel="noopener">
+              Deploy on Railway
+            </a>
+          </div>
+
+          <div class="template-card">
+            <div class="template-card-name">Paperclip</div>
+            <div class="template-card-desc">
+              Paperclip AI Company — deploy your own Paperclip AI agent instance on Railway.
+            </div>
+            <a class="btn primary" href="https://railway.com/deploy/paperclip-ai-company?referralCode=QXdhdr&utm_medium=integration&utm_source=template&utm_campaign=generic" target="_blank" rel="noopener">
+              Deploy on Railway
+            </a>
+          </div>
+
+        </div>
       </div>
     </div>
 
