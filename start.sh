@@ -16,4 +16,23 @@ fi
 
 [ ! -f /data/.hermes/.env ] && touch /data/.hermes/.env
 
+# ── Market-agent additions ──────────────────────────────────────────────────
+# Sync shipped skills into the volume on every container start. Using cp -r
+# (not symlink) so users can still edit skills via the admin dashboard without
+# their changes getting clobbered on the NEXT restart — we only copy if the
+# destination is missing OR the shipped version is newer.
+if [ -d /app/skills ]; then
+  for category_dir in /app/skills/*/; do
+    category=$(basename "$category_dir")
+    mkdir -p "/data/.hermes/skills/$category"
+    cp -rn "$category_dir." "/data/.hermes/skills/$category/" 2>/dev/null || true
+  done
+fi
+
+# Initialize market SQLite DB from shipped schema (idempotent — schema uses
+# CREATE TABLE IF NOT EXISTS and INSERT OR IGNORE for config defaults).
+if [ -f /app/shared/schema.sql ]; then
+  sqlite3 /data/hermes-market.db < /app/shared/schema.sql
+fi
+
 exec python /app/server.py

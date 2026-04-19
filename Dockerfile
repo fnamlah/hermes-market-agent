@@ -24,7 +24,17 @@ RUN git clone --depth 1 https://github.com/NousResearch/hermes-agent.git /opt/he
 COPY requirements.txt /app/requirements.txt
 RUN uv pip install --system --no-cache -r /app/requirements.txt
 
+# Market-agent Python deps for market-data skill
+RUN uv pip install --system --no-cache yfinance pytz
+
+# sqlite3 CLI (needed by scout skills)
+RUN apt-get update && apt-get install -y --no-install-recommends sqlite3 jq && rm -rf /var/lib/apt/lists/*
+
 RUN mkdir -p /data/.hermes
+
+# Market-agent skills (shipped in image; start.sh syncs them to /data/.hermes/skills/)
+COPY skills/ /app/skills/
+COPY shared/ /app/shared/
 
 COPY server.py /app/server.py
 COPY templates/ /app/templates/

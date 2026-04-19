@@ -7,7 +7,7 @@ __pycache__/
 ref_only/
 ref_ui_only/
 ref_ui_only_2/
-skills/
+# skills/ — intentionally tracked in this fork (Dockerfile bakes them into the image)
 dashboard-ref-only/
 openai_anth_ref_only/
 OVERVIEW.md
