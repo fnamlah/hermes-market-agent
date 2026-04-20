@@ -1,0 +1,48 @@
+{
+  "_comment": "Reference cron-job definitions for the Hermes Market Agent. NOT auto-installed — copy entries you want into /data/.hermes/cron/jobs.json via the admin dashboard or CLI. See ~/.claude/plans/ok-for-now-plan-frolicking-bear.md for architecture.",
+  "_note_timezone": "Schedules are in UTC. US market hours (09:30-16:00 ET) = 13:30-20:00 UTC (standard) / 13:30-20:00 UTC (DST). Adjust for your timezone.",
+  "_note_costs": "Full-throttle cron (every 15 min, market hours, 5 weekdays) = ~96 runs/day * 3 skills * ~$0.02/run = ~$5/day on OpenRouter Haiku. Start with manual testing before enabling.",
+
+  "jobs": [
+    {
+      "name": "scout-ingest-market-hours",
+      "description": "Pull fresh posts (X + Reddit) and market quotes every 15 min during market hours.",
+      "schedule": "*/15 13-20 * * 1-5",
+      "prompt": "Run one Scout ingestion cycle. Call apify-x to pull the latest cashtag/keyword posts, apify-reddit for the Tier 1 subreddits, and market-data for all monitored tickers. Use INSERT OR IGNORE so dedup happens at the DB layer. Report counts only (new posts by source, new market_quotes rows).",
+      "skills": ["apify-x", "apify-reddit", "market-data"],
+      "deliver": "local"
+    },
+    {
+      "name": "scout-ingest-extended-hours",
+      "description": "Lower-cadence ingestion pre-market (04:00-09:30 ET) and after-hours (16:00-20:00 ET).",
+      "schedule": "*/30 8-13,20-24 * * 1-5",
+      "prompt": "Run one Scout cycle targeting pre-market or after-hours chatter. Same as scout-ingest-market-hours but expect lower volumes.",
+      "skills": ["apify-x", "apify-reddit", "market-data"],
+      "deliver": "local"
+    },
+    {
+      "name": "sage-analysis-cycle",
+      "description": "Classify new posts and refresh ticker signals every 15 min during market hours. Runs 2 min after the ingest cycle to give Scout time to finish.",
+      "schedule": "2,17,32,47 13-20 * * 1-5",
+      "prompt": "Run one Sage analysis cycle. First, call sentiment-classify to process any unclassified raw_posts from the last 30 minutes. Then call composite-score (which runs the shared/composite_score.py helper) to refresh ticker_signals with the latest aggregates. Report counts and any tickers whose composite_score crossed 0.5 on this cycle.",
+      "skills": ["sentiment-classify", "composite-score"],
+      "deliver": "local"
+    },
+    {
+      "name": "herald-alert-pass",
+      "description": "Check for tickers crossing the alert threshold and emit formatted messages. Runs 4 min after Sage so fresh scores are available.",
+      "schedule": "4,19,34,49 13-20 * * 1-5",
+      "prompt": "For each ticker in ticker_signals from the last 20 minutes with composite_score >= 0.5, call cooldown-check first. If cooldown-check returns emit, call format-alert to compose the message. Emit the alert text as-is (no commentary). If no ticker qualifies, respond with only 'no alerts this cycle'.",
+      "skills": ["cooldown-check", "format-alert"],
+      "deliver": "telegram"
+    },
+    {
+      "name": "herald-daily-brief",
+      "description": "End-of-day social market brief at 4:30 PM ET (20:30 UTC standard, 20:30 UTC DST).",
+      "schedule": "30 20 * * 1-5",
+      "prompt": "Generate today's social market brief using the daily-brief skill. Cover the top 10 tickers by peak composite_score, emerging and fading narratives, false signals suppressed, alert recap, and tomorrow's watchlist. Keep it under 800 words.",
+      "skills": ["daily-brief"],
+      "deliver": "telegram"
+    }
+  ]
+}
