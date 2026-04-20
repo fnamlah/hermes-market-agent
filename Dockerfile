@@ -27,6 +27,10 @@ RUN uv pip install --system --no-cache -r /app/requirements.txt
 # Market-agent Python deps for market-data skill
 RUN uv pip install --system --no-cache yfinance pytz
 
+# Cognee for P4 memory layer. Guarded by OPENAI_API_KEY at runtime (see
+# shared/cognee_setup.py) — package ships but activation is opt-in.
+RUN uv pip install --system --no-cache cognee
+
 # sqlite3 CLI (needed by scout skills)
 RUN apt-get update && apt-get install -y --no-install-recommends sqlite3 jq && rm -rf /var/lib/apt/lists/*
 
