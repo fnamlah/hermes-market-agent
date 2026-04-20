@@ -30,29 +30,31 @@ Scrapes Reddit for US stock discussion. Writes each unique post to `/data/hermes
 
 ## How to invoke Apify
 
-The **Apify Reddit Scraper** (avoid the expensive official Reddit API). Actor: `trudax~reddit-scraper`. Synchronous run endpoint:
+The **Apify Reddit Scraper Lite** (free — pay-per-result only, no monthly rental). Actor: `trudax~reddit-scraper-lite`. Synchronous run endpoint:
 
 ```
-POST https://api.apify.com/v2/acts/trudax~reddit-scraper/run-sync-get-dataset-items?token=$APIFY_TOKEN
+POST https://api.apify.com/v2/acts/trudax~reddit-scraper-lite/run-sync-get-dataset-items?token=$APIFY_TOKEN
 Content-Type: application/json
 
 {
-  "searches": ["AAPL", "TSLA"],
   "startUrls": [
     {"url": "https://www.reddit.com/r/wallstreetbets/new/"},
     {"url": "https://www.reddit.com/r/stocks/new/"},
     {"url": "https://www.reddit.com/r/investing/new/"},
     {"url": "https://www.reddit.com/r/options/new/"}
   ],
-  "type": "posts",
   "sort": "new",
-  "maxItems": 200,
-  "maxPostCount": 50,
+  "maxItems": 30,
+  "maxPostCount": 10,
   "maxComments": 0,
-  "maxCommunitiesCount": 10,
-  "proxy": {"useApifyProxy": true}
+  "skipComments": true,
+  "skipUserPosts": true,
+  "skipCommunity": true,
+  "proxy": {"useApifyProxy": true, "apifyProxyGroups": ["RESIDENTIAL"]}
 }
 ```
+
+**Cost note:** `maxItems: 30` × $0.004/post × 24 cycles/day = ~$2.9/day worst-case. The paid `trudax/reddit-scraper` parent actor went rental-only; this lite variant is the drop-in replacement with the same input schema. Do not raise maxItems past 50 without checking spend on the Apify dashboard.
 
 For cycles that target Tier 1 subs only, skip `searches` and use `startUrls` — cheaper and faster.
 
