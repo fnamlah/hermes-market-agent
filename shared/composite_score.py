@@ -65,8 +65,7 @@ def _tickers_with_fresh_activity(conn: sqlite3.Connection, window: timedelta) ->
         """
         SELECT DISTINCT pp.ticker
         FROM processed_posts pp
-        JOIN raw_posts rp ON rp.id = pp.raw_post_id
-        WHERE rp.created_at_utc > ?
+        WHERE pp.processed_at_utc > ?
         """,
         (cutoff,),
     ).fetchall()
@@ -100,7 +99,7 @@ def _aggregate_window(
         FROM processed_posts pp
         JOIN raw_posts rp ON rp.id = pp.raw_post_id
         WHERE pp.ticker = ?
-          AND rp.created_at_utc > ?
+          AND pp.processed_at_utc > ?
         """,
         (ticker, cutoff),
     ).fetchone()
@@ -123,27 +122,31 @@ def _baseline_24h(conn: sqlite3.Connection, ticker: str, window_minutes: int) ->
         FROM processed_posts pp
         JOIN raw_posts rp ON rp.id = pp.raw_post_id
         WHERE pp.ticker = ?
-          AND rp.created_at_utc > ?
+          AND pp.processed_at_utc > ?
         """,
         (ticker, cutoff),
     ).fetchone()
+    # Baseline uses 24h of ingested data regardless of when posts were authored.
     total = row[0] if row else 0
     # Convert to per-window average. 24h = 1440 min.
     return max(total * (window_minutes / 1440.0), 0.5)
 
 
 def _previous_velocity(conn: sqlite3.Connection, ticker: str, window_minutes: int) -> float:
-    """Velocity in the prior N-minute window (for momentum delta)."""
+    """Velocity in the prior N-minute window (for momentum delta).
+
+    Measures classified posts in the prior window, relative to our pipeline
+    time (processed_at_utc), not the posts' authored time.
+    """
     cutoff_end = _iso(_utc_now() - timedelta(minutes=window_minutes))
     cutoff_start = _iso(_utc_now() - timedelta(minutes=2 * window_minutes))
     row = conn.execute(
         """
         SELECT COUNT(*)
         FROM processed_posts pp
-        JOIN raw_posts rp ON rp.id = pp.raw_post_id
         WHERE pp.ticker = ?
-          AND rp.created_at_utc > ?
-          AND rp.created_at_utc <= ?
+          AND pp.processed_at_utc > ?
+          AND pp.processed_at_utc <= ?
         """,
         (ticker, cutoff_start, cutoff_end),
     ).fetchone()
@@ -266,7 +269,7 @@ def _phase(window: Dict[str, Any], prev_velocity: float, novelty: float) -> str:
 
 # ── Main ────────────────────────────────────────────────────────────────────
 
-def compute_cycle(window_minutes: int = 15, verbose: bool = False) -> int:
+def compute_cycle(window_minutes: int = 60, verbose: bool = False) -> int:
     if not DB_PATH.exists():
         print(f"ERROR: DB missing at {DB_PATH}", file=sys.stderr)
         return 1
@@ -346,7 +349,7 @@ def compute_cycle(window_minutes: int = 15, verbose: bool = False) -> int:
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--window-minutes", type=int, default=15)
+    p.add_argument("--window-minutes", type=int, default=60)
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
     return compute_cycle(window_minutes=args.window_minutes, verbose=args.verbose)

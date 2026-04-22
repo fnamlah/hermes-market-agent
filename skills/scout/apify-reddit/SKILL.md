@@ -67,7 +67,44 @@ START_URLS=$(echo "$TIER1_SUBS" | jq -R '"https://www.reddit.com/r/" + . + "/new
 
 ## Writing to SQLite
 
-Each Apify response item has: `id`, `title`, `body`, `url`, `createdAt`, `username`, `upVotes`, `numberOfComments`, `parsedCommunityName`. Concatenate `title + "\n\n" + body` into the `text` column.
+### Error response detection (MANDATORY before inserting)
+
+Apify sometimes returns an error object instead of an array of posts when the actor isn't rented, the token is invalid, or the API rate-limits. Check for this FIRST:
+
+```bash
+# If the response has a top-level "error" key, abort — do NOT insert error JSON as a post
+if jq -e 'has("error")' < response.json > /dev/null; then
+  ERR=$(jq -r '.error.message // .error' response.json)
+  echo "apify-reddit: Apify returned error: $ERR"
+  exit 1
+fi
+
+# Also bail if response is not a JSON array of posts
+if ! jq -e 'type == "array"' < response.json > /dev/null; then
+  echo "apify-reddit: unexpected response shape, got: $(jq -r 'type' response.json)"
+  exit 1
+fi
+```
+
+Without this guard, the earlier `actor-is-not-rented` error blob got inserted as a "post" with the error message as `text`. That's a data-quality bug worth preventing forever.
+
+### Field mapping (ACTUAL trudax/reddit-scraper-lite output — verified 2026-04-22)
+
+The lite actor uses **snake_case**, not camelCase. Each post item has:
+
+- `id` → external_id (e.g., `"t3_1spven6"`)
+- `title` → first line of text
+- `body` → rest of text
+- `url` → url
+- `created_at` → created_at_utc (ISO 8601, e.g., `"2026-04-19T15:04:15.000Z"`)
+- `author` → author (username)
+- `upvotes` → engagement_likes
+- `comments` → engagement_comments
+- `subreddit` → subreddit
+
+Note: the docs for the original paid parent used camelCase (`createdAt`, `username`, `upVotes`, `numberOfComments`, `parsedCommunityName`). The lite variant uses different field names. Do not copy field mappings from parent-actor docs.
+
+Concatenate `title + "\n\n" + body` into the `text` column.
 
 ```bash
 sqlite3 /data/hermes-market.db <<SQL
@@ -75,8 +112,8 @@ INSERT OR IGNORE INTO raw_posts(
     source, external_id, author, text, url, created_at_utc,
     engagement_likes, engagement_comments, subreddit, raw_json
 ) VALUES (
-    'reddit', :id, :username, :text, :url, :created_at,
-    :upvotes, :num_comments, :sub, :raw_json
+    'reddit', :id, :author, :text, :url, :created_at,
+    :upvotes, :comments, :subreddit, :raw_json
 );
 SQL
 ```

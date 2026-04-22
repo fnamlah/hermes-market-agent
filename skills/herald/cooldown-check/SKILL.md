@@ -66,8 +66,21 @@ If the last alert for this ticker is within the cooldown window:
 Even if cooldown is clear:
 - `false_positive_penalty >= 0.7` → `"likely_spam_or_coordinated"`
 - `unique_authors < 5` → `"insufficient_breadth"`
+- **`cycle_at_utc` older than 20 minutes** → `"stale_signal (last cycle Nm ago)"` — prevents firing alerts on ancient ticker_signals rows when Sage hasn't written a fresh cycle (e.g., no new classified posts in the last window). Critical: without this guard, Herald re-alerts on the same stale row every cooldown expiration, which is a false-positive factory.
 
 Pull these from the ticker_signals row for the current cycle.
+
+```sql
+-- Check staleness
+SELECT ticker, composite_score, cycle_at_utc,
+       (julianday('now') - julianday(cycle_at_utc)) * 24 * 60 AS minutes_old
+FROM ticker_signals
+WHERE ticker = ?
+ORDER BY cycle_at_utc DESC
+LIMIT 1;
+```
+
+If `minutes_old > 20` → suppress.
 
 ## Execution flow
 
